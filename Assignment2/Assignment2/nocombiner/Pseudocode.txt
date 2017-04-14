@@ -1,0 +1,25 @@
+TextArrayWritable - Custom writable object. Array of texts.
+
+Main Class:
+	Setup configuration
+	Initialise the job.
+	Set the mapper, reducer classes for the job.
+	mapper output key class = Text
+	mapper output key class = TextArrayWritable
+	reducer output key class = Text
+	reducer output key class = Text
+	Set the input and output file path
+
+Mapper(Object key, Text value):
+	If the value contains TMAX or TMIN and the temperature != ""{
+	emit(station ID, Writable Text Array["TMAX"/"TMIN", temperature, 1])
+	}
+
+Reducer(Text key, iterable values):
+	Initialise global sum and count variables
+	Iterate values{
+		Aggregate minSum, minCount, maxSum, maxCount
+	}
+	meanMin = minSum/minCount
+	meanMax = maxSum/maxCount
+	emit(key,meanMin,meanMax)

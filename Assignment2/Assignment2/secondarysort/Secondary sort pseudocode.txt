@@ -1,0 +1,57 @@
+
+TextArrayWritable - Custom writable object. Array of texts.
+WritableComparableObject - Custom writable comparable object. (Text, Text)
+
+Main Class:
+	Setup configuration
+	Initialise the job.
+	Set the mapper, reducerm partitioner, group comparator, and key comparator classes for the job.
+	mapper output key class = WritableComparableObject
+	mapper output key class = TextArrayWritable
+	reducer output key class = Text
+	reducer output key class = Text
+	Set the input and output file path
+
+
+Mapper(Object key, Text value):
+	If the value contains TMAX or TMIN and the temperature != ""{
+	emit(WritableComparableObject(station ID, year), Writable Text Array[year, "TMAX"/"TMIN", temperature, 1])
+	}
+
+
+
+The partioner partitions the input list based on the station ID and places the data with the same station ID in a single bucket
+
+Partioner(WritableComparableObject key, TextArrayWritable value):
+	Returns the hash value to partition based on the Station ID
+
+
+
+Since the emits a custom key, this key comparator is used to compare two keys and return the result
+
+Key Comparator(WritableComparable w1, WritableComparable w2):
+	return 0 if both the given keys are equal, -1 if w1 < w1, else 1.
+
+
+
+Group comparator is used to group the values based on a portion of the composite key. For this composite key (stationID, year)
+
+this grouping comparator groups the data with the same station ID and sends them to a single reduce call
+Group Comparator(WritableComparable w1, WritableComparable w2):
+	return 0 if both the Station IDs in the given keys are equal, -1 if w1.stationID < w1.stationID, else 1.
+
+
+
+A single reduce call gets a list of values with the same station ID, sorted by the year. The key is still (station ID, year)
+and the values are alist of (year, temparature label, temperature and count) for that particular station ID in all the years.
+
+Reducer(WritableComparableObject key, Iterable TextArrayWritable values):
+	Each reduce call gets the values for a single station ID sorted by the year
+	Iterate through the values{
+		Aggregate the temperate and count until the year changes
+		When the year value changes, calculate the meanMin and meanMax for that year
+		Append the text (year, meanMIn, meanMax) to the output Text
+		Reset the aggregate values
+	calculate the meanMin and meanMax for the last year
+	Append the last (year, meanMin, meanMax) to the output text
+	emit (station ID, output text)
